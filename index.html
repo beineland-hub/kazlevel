@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>My Kazakh Level</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="questions.js"></script>
+<style>
+  :root{
+    --bg: var(--tg-theme-bg-color, #ffffff);
+    --bg2: var(--tg-theme-secondary-bg-color, #f2f4f7);
+    --text: var(--tg-theme-text-color, #14181f);
+    --hint: var(--tg-theme-hint-color, #8a94a6);
+    --accent: var(--tg-theme-button-color, #1f8fff);
+    --accent-text: var(--tg-theme-button-text-color, #ffffff);
+    --ok: #20a464; --gold: #f5b301;
+    --radius: 16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg2);color:var(--text);
+    font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+  #app{max-width:520px;margin:0 auto;padding:16px 16px 32px;min-height:100vh}
+  .hero{text-align:center;padding:18px 8px 6px}
+  .hero .logo{font-size:52px;line-height:1}
+  .hero h1{margin:8px 0 4px;font-size:22px}
+  .hero p{margin:0;color:var(--hint);font-size:14px}
+  .card{background:var(--bg);border-radius:var(--radius);padding:16px;margin:14px 0;
+    box-shadow:0 1px 3px rgba(0,0,0,.05)}
+  .card h3{margin:0 0 10px;font-size:15px;color:var(--hint);font-weight:600;
+    text-transform:uppercase;letter-spacing:.03em}
+  label{display:block;font-size:14px;color:var(--hint);margin:12px 0 6px}
+  input{width:100%;padding:13px 14px;border-radius:12px;border:1.5px solid transparent;
+    background:var(--bg2);color:var(--text);font-size:16px;outline:none}
+  input:focus{border-color:var(--accent)}
+  .btn{display:block;width:100%;padding:15px;border:0;border-radius:14px;margin-top:14px;
+    background:var(--accent);color:var(--accent-text);font-size:16px;font-weight:600;cursor:pointer}
+  .btn:active{transform:scale(.98)}
+  .btn.ghost{background:var(--bg2);color:var(--accent)}
+  .btn.small{padding:10px;font-size:14px;margin-top:8px}
+  .btn:disabled{opacity:.45}
+  .ages{display:grid;gap:10px}
+  .age{display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;
+    background:var(--bg2);border:2px solid transparent;cursor:pointer}
+  .age .e{font-size:30px}
+  .age b{display:block}
+  .age small{color:var(--hint)}
+  .age.sel{border-color:var(--accent)}
+  .err{color:#e5484d;font-size:14px;margin-top:8px;min-height:18px}
+  .row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bg2)}
+  .row:last-child{border:0}
+  .row span:first-child{color:var(--hint)}
+  .level{font-size:26px;font-weight:700;margin:4px 0}
+  .badge{display:inline-block;padding:4px 10px;border-radius:999px;background:var(--bg2);font-size:13px}
+  .bar{height:8px;background:var(--bg2);border-radius:99px;overflow:hidden;margin:8px 0 4px}
+  .bar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .3s}
+  .qtop{display:flex;justify-content:space-between;color:var(--hint);font-size:14px}
+  .stages{display:flex;gap:6px;margin:10px 0}
+  .stages i{flex:1;height:6px;border-radius:9px;background:var(--bg)}
+  .stages i.done{background:var(--ok)} .stages i.cur{background:var(--accent)}
+  .question{font-size:21px;font-weight:600;margin:18px 4px 18px;text-align:center}
+  .question .emo{display:block;font-size:72px;line-height:1.1;margin-bottom:6px}
+  .opts{display:grid;gap:10px}
+  .opt{padding:16px;border-radius:14px;background:var(--bg);border:2px solid transparent;
+    font-size:17px;text-align:left;color:var(--text);cursor:pointer;width:100%}
+  .opt:active{border-color:var(--accent)}
+  .opt.dk{background:transparent;color:var(--hint);text-align:center;font-size:15px}
+  .kids .opt{font-size:20px;text-align:center;padding:18px}
+  .big{font-size:64px;text-align:center;margin-top:10px}
+  .center{text-align:center}
+  .hist{font-size:14px}
+  .muted{color:var(--hint);font-size:14px}
+  .fade{animation:f .25s ease}
+  @keyframes f{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const tg = window.Telegram && window.Telegram.WebApp;
+const inTG = !!(tg && tg.initData);
+if (tg) { tg.ready(); tg.expand(); }
+const QZ = window.QUIZ;
+const AGE_ICON = {kids: "🧒", teens: "🧑‍🎓", adults: "🧑‍💼"};
+const AGE_HINT = {kids: "Бастауыш сынып", teens: "Мектеп оқушылары", adults: "Ересектер"};
+const $app = document.getElementById("app");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const haptic = t => { try { tg.HapticFeedback.impactOccurred(t || "light"); } catch (e) {} };
+
+// Бот URL-ге студенттің деректерін ?d=... (base64url JSON) етіп қосады
+function readState() {
+  try {
+    const d = new URLSearchParams(location.search).get("d");
+    if (!d) return {};
+    const b = atob(d.replace(/-/g, "+").replace(/_/g, "/"));
+    return JSON.parse(new TextDecoder().decode(Uint8Array.from(b, c => c.charCodeAt(0))));
+  } catch (e) { return {}; }
+}
+const S = readState();
+
+function send(obj) {
+  const data = JSON.stringify(obj);
+  if (inTG) { tg.disableClosingConfirmation && tg.disableClosingConfirmation(); tg.sendData(data); }
+  else alert("Telegram-нан тыс ашылды. Ботқа жіберілетін дерек:\n" + data);
+}
+function render(html, cls) {
+  $app.className = cls || "";
+  $app.innerHTML = `<div class="fade">${html}</div>`;
+  window.scrollTo(0, 0);
+}
+
+// ---------------------------------------------------------------- тіркелу
+function screenRegister() {
+  let age = null;
+  render(`
+    <div class="hero"><div class="logo">🇰🇿</div><h1>My Kazakh Level</h1>
+      <p>Қазақ тілі деңгейін анықтау · Определение уровня казахского</p></div>
+    <div class="card">
+      <h3>Тіркелу / Регистрация</h3>
+      <label>Аты-жөні / Имя и фамилия</label>
+      <input id="name" maxlength="60" placeholder="Мысалы: Айгүл Серікова" autocomplete="name">
+      <label>Телефон нөмірі / Номер телефона</label>
+      <input id="phone" type="tel" placeholder="+7 701 123 45 67" autocomplete="tel">
+      ${inTG && tg.requestContact ? `<button class="btn ghost small" id="tgphone">📱 Telegram нөмірін алу</button>` : ""}
+      <label>Жас тобы / Возраст</label>
+      <div class="ages">${Object.entries(QZ.ages).map(([k, g]) => `
+        <div class="age" data-k="${k}"><span class="e">${AGE_ICON[k]}</span>
+          <div><b>${esc(g.title)}</b><small>${AGE_HINT[k]}</small></div></div>`).join("")}
+      </div>
+      <p class="muted">Бала болса — баланың аты мен жасын, ата-анасының нөмірін жазыңыз.</p>
+      <div class="err" id="err"></div>
+      <button class="btn" id="go">Тіркелу ✅</button>
+    </div>`);
+  document.querySelectorAll(".age").forEach(el => el.onclick = () => {
+    document.querySelectorAll(".age").forEach(x => x.classList.remove("sel"));
+    el.classList.add("sel"); age = el.dataset.k; haptic();
+  });
+  const tp = document.getElementById("tgphone");
+  if (tp) tp.onclick = () => tg.requestContact((ok, res) => {
+    const p = ok && res && res.responseUnsafe && res.responseUnsafe.contact && res.responseUnsafe.contact.phone_number;
+    if (p) document.getElementById("phone").value = (p.startsWith("+") ? "" : "+") + p;
+  });
+  document.getElementById("go").onclick = () => {
+    const name = document.getElementById("name").value.trim().replace(/\s+/g, " ");
+    let phone = document.getElementById("phone").value.replace(/[^\d+]/g, "");
+    const err = document.getElementById("err");
+    if (name.length < 2) return err.textContent = "Аты-жөніңізді жазыңыз";
+    if (phone.replace(/\D/g, "").length < 10) return err.textContent = "Телефон нөмірін толық жазыңыз";
+    if (!age) return err.textContent = "Жас тобын таңдаңыз";
+    if (!phone.startsWith("+")) phone = "+" + phone;
+    send({t: "reg", name, phone, age});
+  };
+}
+
+// ---------------------------------------------------------------- басты бет / кабинет
+function screenHome() {
+  const g = QZ.ages[S.a];
+  const hist = (S.h || []).map(r => `<div class="row"><span>${esc(r[0])}</span><span>${esc(r[1])} · ${r[2]}/${r[3]}</span></div>`).join("");
+  render(`
+    <div class="hero"><div class="logo">${AGE_ICON[S.a] || "🇰🇿"}</div>
+      <h1>Сәлем, ${esc((S.n || "").split(" ")[0])}!</h1><p>My Kazakh Level</p></div>
+    <div class="card center">
+      <h3>Қазіргі деңгей</h3>
+      ${S.l ? `<div class="level">🏅 ${esc(S.l)}</div>
+        <span class="badge">${S.g ? "👥 " + esc(S.g) : "⏳ Топ жиналуда: " + esc(S.q || "")}</span>`
+            : `<p class="muted">Әлі тест тапсырған жоқсыз</p>`}
+      <button class="btn" id="test">📝 ${S.l ? "Тестті қайта тапсыру" : "Тест тапсыру"}</button>
+    </div>
+    <div class="card"><h3>👤 Жеке кабинет</h3>
+      <div class="row"><span>Аты-жөні</span><span>${esc(S.n)}</span></div>
+      <div class="row"><span>Телефон</span><span>${esc(S.p)}</span></div>
+      <div class="row"><span>Жас тобы</span><span>${esc(g ? g.title : "")}</span></div>
+    </div>
+    ${hist ? `<div class="card hist"><h3>📜 Тест тарихы</h3>${hist}</div>` : ""}`);
+  document.getElementById("test").onclick = () => screenIntro();
+}
+
+// ---------------------------------------------------------------- тест
+let T = null;
+function screenIntro() {
+  const g = QZ.ages[S.a];
+  const total = g.blocks.reduce((s, b) => s + b.questions.length, 0);
+  render(`
+    <div class="hero"><div class="logo">📝</div><h1>Деңгей анықтау тесті</h1><p>${esc(g.title)}</p></div>
+    <div class="card"><p style="white-space:pre-line;margin:0">${esc(g.intro)}</p>
+      <p class="muted">${g.blocks.length} кезең · ең көбі ${total} сұрақ. Сұрақтар біртіндеп қиындайды; кезеңді өте алмасаңыз, тест сол жерде аяқталады.</p>
+      <button class="btn" id="go">▶️ Бастау</button>
+      <button class="btn ghost" id="back">← Артқа</button></div>`);
+  document.getElementById("go").onclick = startTest;
+  document.getElementById("back").onclick = screenHome;
+}
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function startTest() {
+  const g = QZ.ages[S.a];
+  const seq = [];
+  g.blocks.forEach((b, bi) => shuffle(b.questions.map((_, qi) => qi)).forEach(qi => seq.push([bi, qi])));
+  T = {g, seq, pos: 0, ans: []};   // ans: [блок, сұрақ, таңдалған нұсқа (-1 = білмеймін)]
+  if (tg && tg.enableClosingConfirmation) tg.enableClosingConfirmation();
+  showQ();
+}
+function splitEmoji(text) {   // "🍎 Бұл не?" -> үлкен эмодзи + мәтін
+  const m = text.match(/^((?:\p{Extended_Pictographic}|\p{Emoji_Presentation}|\d️?⃣)[‍️\p{Extended_Pictographic}]*)\s+(.*)$/u);
+  return m ? `<span class="emo">${m[1]}</span>${esc(m[2])}` : esc(text);
+}
+function showQ() {
+  const [bi, qi] = T.seq[T.pos];
+  const q = T.g.blocks[bi].questions[qi];
+  const order = shuffle(q.options.map((_, i) => i));
+  const nb = T.g.blocks.length;
+  render(`
+    <div class="qtop"><span>Кезең ${bi + 1}/${nb}</span><span>Сұрақ ${T.pos + 1}</span></div>
+    <div class="stages">${T.g.blocks.map((_, i) => `<i class="${i < bi ? "done" : i === bi ? "cur" : ""}"></i>`).join("")}</div>
+    <div class="question">${splitEmoji(q.q)}</div>
+    <div class="opts">
+      ${order.map(o => `<button class="opt" data-o="${o}">${esc(q.options[o])}</button>`).join("")}
+      <button class="opt dk" data-o="-1">🤷 Білмеймін</button>
+    </div>`, S.a === "kids" ? "kids" : "");
+  document.querySelectorAll(".opt").forEach(b => b.onclick = () => answer(+b.dataset.o));
+}
+function blockPassed(bi) {
+  const a = T.ans.filter(x => x[0] === bi);
+  return a.length > 0 && a.filter(x => x[2] === 0).length / a.length >= QZ.passRatio;
+}
+function answer(o) {
+  haptic();
+  const [bi, qi] = T.seq[T.pos];
+  T.ans.push([bi, qi, o]);
+  T.pos++;
+  const ended = T.pos === T.seq.length || T.seq[T.pos][0] !== bi;
+  if (ended && (!blockPassed(bi) || T.pos === T.seq.length)) return finish();
+  showQ();
+}
+function finish() {
+  let passed = 0;
+  for (let i = 0; i < T.g.blocks.length && blockPassed(i); i++) passed = i + 1;
+  const level = passed ? T.g.blocks[passed - 1].level : T.g.zero_level;
+  const correct = T.ans.filter(x => x[2] === 0).length;
+  try { tg.HapticFeedback.notificationOccurred("success"); } catch (e) {}
+  render(`
+    <div class="big">🎉</div>
+    <div class="card center"><h3>Сіздің деңгейіңіз</h3>
+      <div class="level">${esc(level)}</div>
+      <p class="muted">Дұрыс жауап: ${correct} / ${T.ans.length}</p>
+      <p>Нәтижені сақтаңыз — деңгейіңіз бірдей ${QZ.groupSize} адам жиналғанда топқа қосыласыз 🙌</p>
+      <button class="btn" id="save">✅ Нәтижені сақтау</button></div>`);
+  document.getElementById("save").onclick = () => send({t: "res", age: S.a, a: T.ans});
+}
+
+// ---------------------------------------------------------------- іске қосу
+if (!S.reg) screenRegister(); else screenHome();
+</script>
+</body>
+</html>
